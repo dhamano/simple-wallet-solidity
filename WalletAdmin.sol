@@ -34,8 +34,8 @@ contract AdminFunctions is Wallet  {
         walletBalance -= _amount;
         wallets[_to].totalBalance += _amount;
         
-        addTransactionToMainAccount(-1 * int(_amount));
-        addTransactionToAccount(_to, int(_amount));
+        addTransactionToMainAccount(msg.sender, _to, -1 * int(_amount));
+        addTransactionToAccount(_to, msg.sender, _to, int(_amount));
     }
     
     function reclaimMoney(address _from, uint _amount) public payable requireOwner isAmountValidAdmin(_from, _amount) {
@@ -45,33 +45,42 @@ contract AdminFunctions is Wallet  {
         wallets[_from].totalBalance -= _amount;
         walletBalance += _amount;
         
-        addTransactionToMainAccount(int(_amount));
-        addTransactionToAccount(_from, -1 * int(_amount));
+        addTransactionToMainAccount(_from, address(this), int(_amount));
+        addTransactionToAccount(_from, _from, address(this), -1 * int(_amount));
     }
     
-    function transferMoneyBetweenAccounts(address _from, address _to, uint _amount) public isAmountValidAdmin(_from, _amount) {
+    function transferMoneyBetweenAccounts(address _from, address _to, uint _amount) public requireOwner isAmountValidAdmin(_from, _amount) {
         assert(wallets[_from].totalBalance - _amount <= wallets[_from].totalBalance);
         assert(wallets[_to].totalBalance + _amount >= wallets[_to].totalBalance);
+        
+        wallets[_from].totalBalance -= _amount;
+        wallets[_to].totalBalance += _amount;
 
-        addTransactionToAccount(_from, -1 * int(_amount));
-        addTransactionToAccount(_to, int(_amount));
+        addTransactionToAccount(_from, _from, _to, -1 * int(_amount));
+        addTransactionToAccount(_to, _from, _to, int(_amount));
     }
     
-    function getMainTransaction(uint _index) public view returns(int, uint) {
+    function getMainTransaction(uint _index) public view returns(int, address, address, uint) {
         Transactions memory theTransaction = mainTransactions[_index];
         int amount = theTransaction.amount;
+        address fromAccount = theTransaction.fromAccount;
+        address toAccount = theTransaction.toAccount;
         uint time = theTransaction.timestamps;
-        return (amount, time);
+        return (amount, fromAccount, toAccount, time);
     }
     
-    function getAllmainTransactions() public view returns(int[] memory, uint[] memory) {
+    function getAllmainTransactions() public view returns(int[] memory, address[] memory, address[] memory, uint[] memory) {
         int[] memory amount = new int[](mainTransactions.length);
+        address[] memory fromAccount = new address[](mainTransactions.length);
+        address[] memory toAccount = new address[](mainTransactions.length);
         uint[] memory timestamps = new uint[](mainTransactions.length);
         for(uint i = 0; i < mainTransactions.length; i++) {
             amount[i] = mainTransactions[i].amount;
+            fromAccount[i] = mainTransactions[i].fromAccount;
+            toAccount[i] = mainTransactions[i].toAccount;
             timestamps[i] = mainTransactions[i].timestamps;
         }
         
-        return (amount, timestamps);
+        return (amount, fromAccount, toAccount, timestamps);
     }
 }

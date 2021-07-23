@@ -1,12 +1,13 @@
 pragma solidity ^0.5.17;
 
-import "./OwnedBy.sol";
+import "./sect5-shared_wallet_owner.sol";
 
 contract Wallet is OwnedBy {
     
     constructor(uint8 maxNumOwners) OwnedBy(maxNumOwners) public {}
-    
+
     event WalletChange(address indexed _changedFor, address indexed _changedBy, uint _oldAmount, uint _newAmount);
+    event WalletWithdrawal(address indexed _to, address indexed _changedBy, uint _oldAmount, uint _newAmount);
     
     struct Transactions {
         int amount;
@@ -45,7 +46,9 @@ contract Wallet is OwnedBy {
     
     function addMoneyToWallet() public payable {
         assert(walletBalance + msg.value >= walletBalance);
+        emit WalletChange(address(this), msg.sender, walletBalance, walletBalance + msg.value);
         walletBalance += msg.value;
+
         
         addTransactionToMainAccount(msg.sender, address(this), int(msg.value));
     }
@@ -53,6 +56,8 @@ contract Wallet is OwnedBy {
     function withdrawMoney(address payable _to, uint _withdrawalAmount) public isAmountValid(_withdrawalAmount) {
         assert(wallets[msg.sender].totalBalance - _withdrawalAmount <= wallets[msg.sender].totalBalance);
         
+        emit WalletWithdrawal(_to, msg.sender, wallets[msg.sender].totalBalance, wallets[msg.sender].totalBalance - _withdrawalAmount);
+
         wallets[msg.sender].totalBalance -= _withdrawalAmount;
 
         addTransactionToAccount(msg.sender, msg.sender, _to, -1 * int(_withdrawalAmount));

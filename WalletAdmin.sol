@@ -1,10 +1,12 @@
 pragma solidity ^0.5.17;
 
-import "./Wallet.sol";
+import "./sect5-shared_wallet.sol";
 
 contract AdminFunctions is Wallet  {
     
     constructor(uint8 maxNumOwners) Wallet(maxNumOwners) public {}
+    
+    event DispurseMoneyEvent(address indexed _from, address indexed _to, uint _mainWalletOldAmount, uint _mainWalletAmount, uint _walletOldAmount, uint _walletAmount);
     
     modifier isWalletBalanceValid(uint _amount) {
         require(walletBalance >= _amount, "Not enough funds in wallet");
@@ -23,6 +25,8 @@ contract AdminFunctions is Wallet  {
     function withdrawMoneyFromContract(address payable _to, uint _amount) public requireOwner isWalletBalanceValid(_amount) {
         assert(walletBalance - _amount <= walletBalance);
         
+        emit WalletChange(address(this), msg.sender, walletBalance, walletBalance - _amount);
+        
         walletBalance -= _amount;
         _to.transfer(_amount);
     }
@@ -30,6 +34,8 @@ contract AdminFunctions is Wallet  {
     function dispurseMoney(address _to, uint _amount) public payable requireOwner isWalletBalanceValid(_amount) {
         assert(walletBalance - _amount <= walletBalance);
         assert(wallets[_to].totalBalance + _amount >= wallets[_to].totalBalance);
+        
+        emit DispurseMoneyEvent(_to, msg.sender, walletBalance, walletBalance - _amount, wallets[_to].totalBalance, wallets[_to].totalBalance + _amount);
         
         walletBalance -= _amount;
         wallets[_to].totalBalance += _amount;
@@ -42,6 +48,8 @@ contract AdminFunctions is Wallet  {
         assert(wallets[_from].totalBalance - _amount <= wallets[_from].totalBalance);
         assert(walletBalance + _amount >= walletBalance);
         
+        emit DispurseMoneyEvent(_from, msg.sender, walletBalance, walletBalance + _amount, wallets[_from].totalBalance, wallets[_from].totalBalance - _amount);
+        
         wallets[_from].totalBalance -= _amount;
         walletBalance += _amount;
         
@@ -52,6 +60,9 @@ contract AdminFunctions is Wallet  {
     function transferMoneyBetweenAccounts(address _from, address _to, uint _amount) public requireOwner isAmountValidAdmin(_from, _amount) {
         assert(wallets[_from].totalBalance - _amount <= wallets[_from].totalBalance);
         assert(wallets[_to].totalBalance + _amount >= wallets[_to].totalBalance);
+        
+        emit WalletChange(_to, _from, wallets[_to].totalBalance, wallets[_to].totalBalance + _amount);
+        emit WalletChange(_from, _to, wallets[_from].totalBalance, wallets[_from].totalBalance - _amount);
         
         wallets[_from].totalBalance -= _amount;
         wallets[_to].totalBalance += _amount;

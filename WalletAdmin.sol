@@ -1,6 +1,6 @@
 pragma solidity ^0.5.17;
 
-import "./sect5-shared_wallet.sol";
+import "./Wallet.sol";
 
 contract AdminFunctions is Wallet  {
     

@@ -1,6 +1,6 @@
 pragma solidity ^0.5.17;
 
-import "./sect5-shared_wallet_owner.sol";
+import "./OwnedBy.sol";
 
 contract Wallet is OwnedBy {
     
